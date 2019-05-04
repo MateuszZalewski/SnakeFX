@@ -28,13 +28,10 @@ public class Main extends Application {
     public final static int BLOCK_SIZE = 10;
     public Direction direction = Direction.RIGHT;
 
-
     public static final Group root = new Group();
 
     ObservableList<Node> snake = root.getChildren();
     Scene scene = new Scene(root, WIDTH, HEIGHT, Color.WHITE);
-//    private final Canvas canvas = new Canvas(WIDTH,HEIGHT);
-//    private GraphicsContext graphicsContext = canvas.getGraphicsContext2D();
 
     @Override
     public void start(Stage primaryStage) throws Exception {
@@ -68,45 +65,46 @@ public class Main extends Application {
         GraphicsContext graphicsContext = canvas.getGraphicsContext2D();
         graphicsContext.setFill(Color.WHITE);
         root.getChildren().add(canvas);
-        Rectangle rectangle = new Rectangle(BLOCK_SIZE, BLOCK_SIZE, Color.RED);
-        rectangle.setTranslateX(0);
-        rectangle.setTranslateY(0);
-        root.getChildren().add(rectangle);
         Rectangle food = new Rectangle(BLOCK_SIZE, BLOCK_SIZE, Color.RED);
         food.setTranslateX(random.nextInt(WIDTH - BLOCK_SIZE) / BLOCK_SIZE * BLOCK_SIZE);
         food.setTranslateY(random.nextInt(HEIGHT - BLOCK_SIZE) / BLOCK_SIZE * BLOCK_SIZE);
         root.getChildren().add(food);
+        Rectangle rectangle = new Rectangle(BLOCK_SIZE, BLOCK_SIZE, Color.RED);
+        rectangle.setTranslateX(0);
+        rectangle.setTranslateY(0);
+        root.getChildren().add(rectangle);
         Timeline timeline = new Timeline();
-        TranslateTransition headTrans = new TranslateTransition(Duration.millis(MS_PER_FRAME), snake.get(1));
+        TranslateTransition headTrans = new TranslateTransition(Duration.millis(MS_PER_FRAME / 2), snake.get(2));
         ParallelTransition pt = new ParallelTransition();
         pt.getChildren().add(headTrans);
-        Rectangle head = (Rectangle) snake.get(1);
+        Rectangle head = (Rectangle) snake.get(2);
         KeyFrame keyFrame = new KeyFrame(Duration.millis(MS_PER_FRAME), e -> {
-            pt.stop();
-            int lastToX = (int) head.getTranslateX() / BLOCK_SIZE * BLOCK_SIZE;
-            int lastToY = (int) head.getTranslateY() / BLOCK_SIZE * BLOCK_SIZE;
+            pt.pause();
+            System.out.println("(" + head.getTranslateX() + "," + head.getTranslateY() + ")");
+            double lastToX = head.getTranslateX() / BLOCK_SIZE * BLOCK_SIZE;
+            double lastToY = head.getTranslateY() / BLOCK_SIZE * BLOCK_SIZE;
             switch (direction) {
                 case UP:
-                    ((TranslateTransition) (pt.getChildren().get(0))).setByY(-BLOCK_SIZE);
-                    ((TranslateTransition) (pt.getChildren().get(0))).setByX(0);
+                    ((TranslateTransition) (pt.getChildren().get(0))).setToX(lastToX);
+                    ((TranslateTransition) (pt.getChildren().get(0))).setToY(lastToY - BLOCK_SIZE);
                     break;
                 case DOWN:
-                    ((TranslateTransition) (pt.getChildren().get(0))).setByY(BLOCK_SIZE);
-                    ((TranslateTransition) (pt.getChildren().get(0))).setByX(0);
+                    ((TranslateTransition) (pt.getChildren().get(0))).setToX(lastToX);
+                    ((TranslateTransition) (pt.getChildren().get(0))).setToY(lastToY + BLOCK_SIZE);
                     break;
                 case RIGHT:
-                    ((TranslateTransition) (pt.getChildren().get(0))).setByX(BLOCK_SIZE);
-                    ((TranslateTransition) (pt.getChildren().get(0))).setByY(0);
+                    ((TranslateTransition) (pt.getChildren().get(0))).setToX(lastToX + BLOCK_SIZE);
+                    ((TranslateTransition) (pt.getChildren().get(0))).setToY(lastToY);
                     break;
                 case LEFT:
-                    ((TranslateTransition) (pt.getChildren().get(0))).setByX(-BLOCK_SIZE);
-                    ((TranslateTransition) (pt.getChildren().get(0))).setByY(0);
+                    ((TranslateTransition) (pt.getChildren().get(0))).setToX(lastToX - BLOCK_SIZE);
+                    ((TranslateTransition) (pt.getChildren().get(0))).setToY(lastToY);
                     break;
             }
             int i = 1;
             for (Animation rectMove : pt.getChildren().subList(1, pt.getChildren().size())) {
-                int curToX = (int) ((TranslateTransition) (rectMove)).getToX();
-                int curToY = (int) ((TranslateTransition) (rectMove)).getToY();
+                double curToX = ((TranslateTransition) (rectMove)).getToX();
+                double curToY = ((TranslateTransition) (rectMove)).getToY();
                 ((TranslateTransition) (rectMove)).setToY(lastToY);
                 ((TranslateTransition) (rectMove)).setToX(lastToX);
                 lastToX = curToX;
@@ -114,11 +112,15 @@ public class Main extends Application {
             }
 
             if (lastToX == food.getTranslateX() && lastToY == food.getTranslateY()) {
+                Rectangle rect = new Rectangle(BLOCK_SIZE, BLOCK_SIZE, Color.RED);
+                rect.setTranslateX(lastToX);
+                rect.setTranslateY(lastToY);
+                root.getChildren().add(rect);
+                TranslateTransition rectTT = new TranslateTransition(Duration.millis(MS_PER_FRAME / 2), rect);
+                pt.getChildren().add(rectTT);
                 food.setTranslateX(random.nextInt(WIDTH - BLOCK_SIZE) / BLOCK_SIZE * BLOCK_SIZE);
                 food.setTranslateY(random.nextInt(HEIGHT - BLOCK_SIZE) / BLOCK_SIZE * BLOCK_SIZE);
             }
-            System.out.println("(" + head.getTranslateX() + "," + head.getTranslateY() + ")");
-//            System.out.println("("+food.getTranslateX()+","+food.getTranslateY()+")");
             pt.play();
         });
         timeline.getKeyFrames().add(keyFrame);
