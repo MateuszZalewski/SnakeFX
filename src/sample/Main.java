@@ -28,6 +28,7 @@ public class Main extends Application {
     public final static int BLOCK_SIZE = 10;
     public Direction direction = Direction.RIGHT;
     private boolean running = true;
+    private boolean moved = false;
     public static final Group root = new Group();
     public Timeline timeline = new Timeline();
     ParallelTransition pt = new ParallelTransition();
@@ -40,31 +41,34 @@ public class Main extends Application {
         Canvas canvas = new Canvas(WIDTH, HEIGHT);
         canvas.setFocusTraversable(true);
         scene.setOnKeyPressed(keyEvent -> {
-            switch (keyEvent.getCode()) {
-                case UP:
-                case W:
-                    if (direction != Direction.DOWN) {
-                        direction = Direction.UP;
-                    }
-                    break;
-                case DOWN:
-                case S:
-                    if (direction != Direction.UP) {
-                        direction = Direction.DOWN;
-                    }
-                    break;
-                case LEFT:
-                case A:
-                    if (direction != Direction.RIGHT) {
-                        direction = Direction.LEFT;
-                    }
-                    break;
-                case RIGHT:
-                case D:
-                    if (direction != Direction.LEFT) {
-                        direction = Direction.RIGHT;
-                    }
-                    break;
+            if (moved) {
+                switch (keyEvent.getCode()) {
+                    case UP:
+                    case W:
+                        if (direction != Direction.DOWN) {
+                            direction = Direction.UP;
+                        }
+                        break;
+                    case DOWN:
+                    case S:
+                        if (direction != Direction.UP) {
+                            direction = Direction.DOWN;
+                        }
+                        break;
+                    case LEFT:
+                    case A:
+                        if (direction != Direction.RIGHT) {
+                            direction = Direction.LEFT;
+                        }
+                        break;
+                    case RIGHT:
+                    case D:
+                        if (direction != Direction.LEFT) {
+                            direction = Direction.RIGHT;
+                        }
+                        break;
+                }
+                moved = false;
             }
         });
         GraphicsContext graphicsContext = canvas.getGraphicsContext2D();
@@ -108,7 +112,7 @@ public class Main extends Application {
                     ((TranslateTransition) (pt.getChildren().get(0))).setToY(lastToY);
                     break;
             }
-            int i = 1;
+            moved = true;
             for (Animation rectMove : pt.getChildren().subList(1, pt.getChildren().size())) {
                 double curToX = ((TranslateTransition) (rectMove)).getToX();
                 double curToY = ((TranslateTransition) (rectMove)).getToY();
