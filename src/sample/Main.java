@@ -27,9 +27,10 @@ public class Main extends Application {
     public final static int HEIGHT = 300;
     public final static int BLOCK_SIZE = 10;
     public Direction direction = Direction.RIGHT;
-
+    private boolean running = true;
     public static final Group root = new Group();
-
+    public Timeline timeline = new Timeline();
+    ParallelTransition pt = new ParallelTransition();
     ObservableList<Node> snake = root.getChildren();
     Scene scene = new Scene(root, WIDTH, HEIGHT, Color.WHITE);
 
@@ -42,23 +43,27 @@ public class Main extends Application {
             switch (keyEvent.getCode()) {
                 case UP:
                 case W:
-                    if (direction != Direction.DOWN)
+                    if (direction != Direction.DOWN) {
                         direction = Direction.UP;
+                    }
                     break;
                 case DOWN:
                 case S:
-                    if (direction != Direction.UP)
+                    if (direction != Direction.UP) {
                         direction = Direction.DOWN;
+                    }
                     break;
                 case LEFT:
                 case A:
-                    if (direction != Direction.RIGHT)
+                    if (direction != Direction.RIGHT) {
                         direction = Direction.LEFT;
+                    }
                     break;
                 case RIGHT:
                 case D:
-                    if (direction != Direction.LEFT)
+                    if (direction != Direction.LEFT) {
                         direction = Direction.RIGHT;
+                    }
                     break;
             }
         });
@@ -73,13 +78,15 @@ public class Main extends Application {
         rectangle.setTranslateX(0);
         rectangle.setTranslateY(0);
         root.getChildren().add(rectangle);
-        Timeline timeline = new Timeline();
-        TranslateTransition headTrans = new TranslateTransition(Duration.millis(MS_PER_FRAME / 2), snake.get(2));
+        TranslateTransition headTrans = new TranslateTransition(Duration.millis(MS_PER_FRAME * 3 / 4), snake.get(2));
         ParallelTransition pt = new ParallelTransition();
         pt.getChildren().add(headTrans);
         Rectangle head = (Rectangle) snake.get(2);
         KeyFrame keyFrame = new KeyFrame(Duration.millis(MS_PER_FRAME), e -> {
-            pt.pause();
+
+            if (!running) {
+                return;
+            }
             System.out.println("(" + head.getTranslateX() + "," + head.getTranslateY() + ")");
             double lastToX = head.getTranslateX() / BLOCK_SIZE * BLOCK_SIZE;
             double lastToY = head.getTranslateY() / BLOCK_SIZE * BLOCK_SIZE;
@@ -111,12 +118,27 @@ public class Main extends Application {
                 lastToY = curToY;
             }
 
-            if (lastToX == food.getTranslateX() && lastToY == food.getTranslateY()) {
-                Rectangle rect = new Rectangle(BLOCK_SIZE, BLOCK_SIZE, Color.RED);
+            for (Node rect : snake.subList(2, snake.size())) {
+                if (snake.size() % 2 == 0)
+                    ((Rectangle) rect).setFill(Color.BLACK);
+                else
+                    ((Rectangle) rect).setFill(Color.RED);
+                if (head != rect && rect.getTranslateX() == head.getTranslateX() && rect.getTranslateY() == head.getTranslateY()) {
+                    stopGame();
+                }
+            }
+
+            if (head.getTranslateX() == food.getTranslateX() && head.getTranslateY() == food.getTranslateY()) {
+                pt.stop();
+                Rectangle rect = new Rectangle(BLOCK_SIZE, BLOCK_SIZE);
                 rect.setTranslateX(lastToX);
                 rect.setTranslateY(lastToY);
+                if (snake.size() % 2 == 1)
+                    rect.setFill(Color.RED);
+                else
+                    rect.setFill(Color.BLACK);
                 root.getChildren().add(rect);
-                TranslateTransition rectTT = new TranslateTransition(Duration.millis(MS_PER_FRAME / 2), rect);
+                TranslateTransition rectTT = new TranslateTransition(Duration.millis(MS_PER_FRAME * 3 / 4), rect);
                 pt.getChildren().add(rectTT);
                 food.setTranslateX(random.nextInt(WIDTH - BLOCK_SIZE) / BLOCK_SIZE * BLOCK_SIZE);
                 food.setTranslateY(random.nextInt(HEIGHT - BLOCK_SIZE) / BLOCK_SIZE * BLOCK_SIZE);
@@ -131,6 +153,15 @@ public class Main extends Application {
         timeline.play();
     }
 
+
+    public void stopGame() {
+        running = false;
+        System.out.println("KUPA");
+        timeline.stop();
+        snake.clear();
+        pt.getChildren().clear();
+        System.out.println("kupa");
+    }
 
     public static void main(String[] args) {
         launch(args);
