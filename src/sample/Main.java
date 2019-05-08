@@ -1,5 +1,6 @@
 package sample;
 
+import com.google.gson.Gson;
 import javafx.animation.*;
 import javafx.application.Application;
 import javafx.collections.ObservableList;
@@ -35,8 +36,14 @@ public class Main extends Application {
     ObservableList<Node> snake = root.getChildren();
     Scene scene = new Scene(root, WIDTH, HEIGHT, Color.WHITE);
 
+    float lastRate = 0.0F;
+
+    Float curRate = 0.0F;
+
     @Override
+
     public void start(Stage primaryStage) throws Exception {
+
 
         Canvas canvas = new Canvas(WIDTH, HEIGHT);
         canvas.setFocusTraversable(true);
@@ -86,6 +93,10 @@ public class Main extends Application {
         ParallelTransition pt = new ParallelTransition();
         pt.getChildren().add(headTrans);
         Rectangle head = (Rectangle) snake.get(2);
+
+//        BitcoinMarketInfo bitcoinMarketInfo = new Gson().fromJson(bitcoinRates.getJson(), BitcoinMarketInfo.class);
+//        updateValue(bitcoinMarketInfo.getRate_float());
+
         KeyFrame keyFrame = new KeyFrame(Duration.millis(MS_PER_FRAME), e -> {
 
             if (!running) {
@@ -122,14 +133,20 @@ public class Main extends Application {
                 lastToY = curToY;
             }
 
+
             for (Node rect : snake.subList(2, snake.size())) {
-                if (snake.size() % 2 == 0)
+                if (curRate - lastRate > 0)
                     ((Rectangle) rect).setFill(Color.BLACK);
                 else
                     ((Rectangle) rect).setFill(Color.RED);
                 if (head != rect && rect.getTranslateX() == head.getTranslateX() && rect.getTranslateY() == head.getTranslateY()) {
                     stopGame();
                 }
+            }
+
+            lastRate = curRate;
+            if (head.getTranslateX() < 0 || head.getTranslateY() < 0 || head.getTranslateX() >= WIDTH || head.getTranslateY() >= HEIGHT) {
+                stopGame();
             }
 
             if (head.getTranslateX() == food.getTranslateX() && head.getTranslateY() == food.getTranslateY()) {
@@ -156,7 +173,6 @@ public class Main extends Application {
         primaryStage.show();
         timeline.play();
     }
-
 
     public void stopGame() {
         running = false;
