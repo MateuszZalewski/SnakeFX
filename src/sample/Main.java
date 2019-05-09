@@ -1,14 +1,16 @@
 package sample;
 
-import com.google.gson.Gson;
 import javafx.animation.*;
 import javafx.application.Application;
+import javafx.beans.property.SimpleStringProperty;
+import javafx.beans.property.StringProperty;
 import javafx.collections.ObservableList;
 import javafx.scene.Group;
 import javafx.scene.Node;
 import javafx.scene.Scene;
-import javafx.scene.canvas.Canvas;
-import javafx.scene.canvas.GraphicsContext;
+
+import javafx.scene.control.Label;
+import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
 import javafx.stage.Stage;
@@ -19,152 +21,156 @@ import java.util.Random;
 public class Main extends Application {
 
     public enum Direction {
-        UP, DOWN, LEFT, RIGHT;
+        UP, DOWN, LEFT, RIGHT
     }
 
+    private int score = 0;
+
     private final Random random = new Random();
-    public final static int MS_PER_FRAME = 80;
-    public final static int WIDTH = 600;
-    public final static int HEIGHT = 300;
-    public final static int BLOCK_SIZE = 10;
-    public Direction direction = Direction.RIGHT;
+    private final static int MS_PER_FRAME = 80;
+    private final static int WIDTH = 600;
+    private final static int HEIGHT = 300;
+    private final static int BLOCK_SIZE = 10;
+    private Direction direction = Direction.RIGHT;
+    private Rectangle head;
     private boolean running = true;
     private boolean moved = false;
-    public static final Group root = new Group();
-    public Timeline timeline = new Timeline();
-    ParallelTransition pt = new ParallelTransition();
-    ObservableList<Node> snake = root.getChildren();
-    Scene scene = new Scene(root, WIDTH, HEIGHT, Color.WHITE);
+    private final Pane pane = new Pane();
+    private final Label scoreBoard = new Label("score:");
+    private Rectangle food;
+    StringProperty valueProperty = new SimpleStringProperty("score: 0");
+    private static final Group root = new Group();
 
-    float lastRate = 0.0F;
-
-    Float curRate = 0.0F;
+    private Timeline timeline = new Timeline();
+    private ParallelTransition pt = new ParallelTransition();
+    private ObservableList<Node> snake = root.getChildren();
+    private Scene scene = new Scene(pane, WIDTH, HEIGHT, Color.WHITE);
 
     @Override
 
-    public void start(Stage primaryStage) throws Exception {
-
-
-        Canvas canvas = new Canvas(WIDTH, HEIGHT);
-        canvas.setFocusTraversable(true);
+    public void start(Stage primaryStage) {
+        pane.getChildren().add(root);
+        pane.getChildren().add(scoreBoard);
+        primaryStage.setResizable(false);
         scene.setOnKeyPressed(keyEvent -> {
-            if (moved) {
                 switch (keyEvent.getCode()) {
                     case UP:
                     case W:
-                        if (direction != Direction.DOWN) {
+                        if (direction != Direction.DOWN && moved) {
                             direction = Direction.UP;
+                            moved = false;
                         }
                         break;
                     case DOWN:
                     case S:
-                        if (direction != Direction.UP) {
+                        if (direction != Direction.UP && moved) {
                             direction = Direction.DOWN;
+                            moved = false;
                         }
                         break;
                     case LEFT:
                     case A:
-                        if (direction != Direction.RIGHT) {
+                        if (direction != Direction.RIGHT && moved) {
                             direction = Direction.LEFT;
+                            moved = false;
                         }
                         break;
                     case RIGHT:
                     case D:
-                        if (direction != Direction.LEFT) {
+                        if (direction != Direction.LEFT && moved) {
                             direction = Direction.RIGHT;
+                            moved = false;
                         }
                         break;
+                    case SPACE:
+                    case R:
+                        restartGame();
+                        break;
+                    case P:
+                        pauseGame();
+                        break;
+                    case O:
+                        unpauseGame();
+                        break;
                 }
-                moved = false;
-            }
         });
-        GraphicsContext graphicsContext = canvas.getGraphicsContext2D();
-        graphicsContext.setFill(Color.WHITE);
-        root.getChildren().add(canvas);
-        Rectangle food = new Rectangle(BLOCK_SIZE, BLOCK_SIZE, Color.RED);
-        food.setTranslateX(random.nextInt(WIDTH - BLOCK_SIZE) / BLOCK_SIZE * BLOCK_SIZE);
-        food.setTranslateY(random.nextInt(HEIGHT - BLOCK_SIZE) / BLOCK_SIZE * BLOCK_SIZE);
-        root.getChildren().add(food);
-        Rectangle rectangle = new Rectangle(BLOCK_SIZE, BLOCK_SIZE, Color.RED);
-        rectangle.setTranslateX(0);
-        rectangle.setTranslateY(0);
-        root.getChildren().add(rectangle);
-        TranslateTransition headTrans = new TranslateTransition(Duration.millis(MS_PER_FRAME * 3 / 4), snake.get(2));
-        ParallelTransition pt = new ParallelTransition();
-        pt.getChildren().add(headTrans);
-        Rectangle head = (Rectangle) snake.get(2);
+
+        startGame();
+        head = (Rectangle) snake.get(1);
+        scoreBoard.textProperty().bind(valueProperty);
 
 //        BitcoinMarketInfo bitcoinMarketInfo = new Gson().fromJson(bitcoinRates.getJson(), BitcoinMarketInfo.class);
 //        updateValue(bitcoinMarketInfo.getRate_float());
 
         KeyFrame keyFrame = new KeyFrame(Duration.millis(MS_PER_FRAME), e -> {
 
-            if (!running) {
-                return;
-            }
-            System.out.println("(" + head.getTranslateX() + "," + head.getTranslateY() + ")");
-            double lastToX = head.getTranslateX() / BLOCK_SIZE * BLOCK_SIZE;
-            double lastToY = head.getTranslateY() / BLOCK_SIZE * BLOCK_SIZE;
-            switch (direction) {
-                case UP:
-                    ((TranslateTransition) (pt.getChildren().get(0))).setToX(lastToX);
-                    ((TranslateTransition) (pt.getChildren().get(0))).setToY(lastToY - BLOCK_SIZE);
-                    break;
-                case DOWN:
-                    ((TranslateTransition) (pt.getChildren().get(0))).setToX(lastToX);
-                    ((TranslateTransition) (pt.getChildren().get(0))).setToY(lastToY + BLOCK_SIZE);
-                    break;
-                case RIGHT:
-                    ((TranslateTransition) (pt.getChildren().get(0))).setToX(lastToX + BLOCK_SIZE);
-                    ((TranslateTransition) (pt.getChildren().get(0))).setToY(lastToY);
-                    break;
-                case LEFT:
-                    ((TranslateTransition) (pt.getChildren().get(0))).setToX(lastToX - BLOCK_SIZE);
-                    ((TranslateTransition) (pt.getChildren().get(0))).setToY(lastToY);
-                    break;
-            }
-            moved = true;
-            for (Animation rectMove : pt.getChildren().subList(1, pt.getChildren().size())) {
-                double curToX = ((TranslateTransition) (rectMove)).getToX();
-                double curToY = ((TranslateTransition) (rectMove)).getToY();
-                ((TranslateTransition) (rectMove)).setToY(lastToY);
-                ((TranslateTransition) (rectMove)).setToX(lastToX);
-                lastToX = curToX;
-                lastToY = curToY;
-            }
+            if (running) {
 
-
-            for (Node rect : snake.subList(2, snake.size())) {
-                if (curRate - lastRate > 0)
-                    ((Rectangle) rect).setFill(Color.BLACK);
-                else
-                    ((Rectangle) rect).setFill(Color.RED);
-                if (head != rect && rect.getTranslateX() == head.getTranslateX() && rect.getTranslateY() == head.getTranslateY()) {
-                    stopGame();
+                System.out.println("(" + head.getTranslateX() + "," + head.getTranslateY() + ")");
+                double lastToX = head.getTranslateX() / BLOCK_SIZE * BLOCK_SIZE;
+                double lastToY = head.getTranslateY() / BLOCK_SIZE * BLOCK_SIZE;
+                switch (direction) {
+                    case UP:
+                        ((TranslateTransition) (pt.getChildren().get(0))).setToX(lastToX);
+                        ((TranslateTransition) (pt.getChildren().get(0))).setToY(lastToY - BLOCK_SIZE);
+                        break;
+                    case DOWN:
+                        ((TranslateTransition) (pt.getChildren().get(0))).setToX(lastToX);
+                        ((TranslateTransition) (pt.getChildren().get(0))).setToY(lastToY + BLOCK_SIZE);
+                        break;
+                    case RIGHT:
+                        ((TranslateTransition) (pt.getChildren().get(0))).setToX(lastToX + BLOCK_SIZE);
+                        ((TranslateTransition) (pt.getChildren().get(0))).setToY(lastToY);
+                        break;
+                    case LEFT:
+                        ((TranslateTransition) (pt.getChildren().get(0))).setToX(lastToX - BLOCK_SIZE);
+                        ((TranslateTransition) (pt.getChildren().get(0))).setToY(lastToY);
+                        break;
                 }
-            }
+                moved = true;
+                for (Animation rectMove : pt.getChildren().subList(1, pt.getChildren().size())) {
+                    double curToX = ((TranslateTransition) (rectMove)).getToX();
+                    double curToY = ((TranslateTransition) (rectMove)).getToY();
+                    ((TranslateTransition) (rectMove)).setToY(lastToY);
+                    ((TranslateTransition) (rectMove)).setToX(lastToX);
+                    lastToX = curToX;
+                    lastToY = curToY;
+                }
 
-            lastRate = curRate;
-            if (head.getTranslateX() < 0 || head.getTranslateY() < 0 || head.getTranslateX() >= WIDTH || head.getTranslateY() >= HEIGHT) {
-                stopGame();
-            }
 
-            if (head.getTranslateX() == food.getTranslateX() && head.getTranslateY() == food.getTranslateY()) {
-                pt.stop();
-                Rectangle rect = new Rectangle(BLOCK_SIZE, BLOCK_SIZE);
-                rect.setTranslateX(lastToX);
-                rect.setTranslateY(lastToY);
-                if (snake.size() % 2 == 1)
-                    rect.setFill(Color.RED);
-                else
-                    rect.setFill(Color.BLACK);
-                root.getChildren().add(rect);
-                TranslateTransition rectTT = new TranslateTransition(Duration.millis(MS_PER_FRAME * 3 / 4), rect);
-                pt.getChildren().add(rectTT);
-                food.setTranslateX(random.nextInt(WIDTH - BLOCK_SIZE) / BLOCK_SIZE * BLOCK_SIZE);
-                food.setTranslateY(random.nextInt(HEIGHT - BLOCK_SIZE) / BLOCK_SIZE * BLOCK_SIZE);
+                if (head.getTranslateX() < 0 || head.getTranslateY() < 0 || head.getTranslateX() >= WIDTH || head.getTranslateY() >= HEIGHT) {
+                    restartGame();
+                }
+
+                for (Node rect : snake.subList(1, snake.size())) {
+                    if (snake.size() % 2 == 0)
+                        ((Rectangle) rect).setFill(Color.BLACK);
+                    else
+                        ((Rectangle) rect).setFill(Color.RED);
+                    if (head != rect && rect.getTranslateX() == head.getTranslateX() && rect.getTranslateY() == head.getTranslateY()) {
+                        restartGame();
+                    }
+                }
+
+                if (head.getTranslateX() == food.getTranslateX() && head.getTranslateY() == food.getTranslateY()) {
+//                pt.stop();
+                    score++;
+                    valueProperty.setValue("score: " + score);
+                    Rectangle rect = new Rectangle(BLOCK_SIZE, BLOCK_SIZE);
+                    rect.setTranslateX(lastToX);
+                    rect.setTranslateY(lastToY);
+                    if (snake.size() % 2 == 1)
+                        rect.setFill(Color.RED);
+                    else
+                        rect.setFill(Color.BLACK);
+                    root.getChildren().add(rect);
+                    TranslateTransition rectTT = new TranslateTransition(Duration.millis(MS_PER_FRAME * 3 / 4), rect);
+                    pt.getChildren().add(rectTT);
+                    food.setTranslateX(random.nextInt(WIDTH - BLOCK_SIZE) / BLOCK_SIZE * BLOCK_SIZE);
+                    food.setTranslateY(random.nextInt(HEIGHT - BLOCK_SIZE) / BLOCK_SIZE * BLOCK_SIZE);
+                }
+                pt.play();
             }
-            pt.play();
         });
         timeline.getKeyFrames().add(keyFrame);
         timeline.setCycleCount(Timeline.INDEFINITE);
@@ -174,16 +180,50 @@ public class Main extends Application {
         timeline.play();
     }
 
+    public void startGame() {
+        direction = Direction.RIGHT;
+        food = new Rectangle(BLOCK_SIZE, BLOCK_SIZE, Color.RED);
+        food.setTranslateX(random.nextInt(WIDTH - BLOCK_SIZE) / BLOCK_SIZE * BLOCK_SIZE);
+        food.setTranslateY(random.nextInt(HEIGHT - BLOCK_SIZE) / BLOCK_SIZE * BLOCK_SIZE);
+        snake.clear();
+        snake.add(food);
+        head = new Rectangle(BLOCK_SIZE, BLOCK_SIZE, Color.BLACK);
+        head.setTranslateX(0);
+        head.setTranslateY(0);
+        snake.add(head);
+        TranslateTransition headTrans = new TranslateTransition(Duration.millis(MS_PER_FRAME * 3 / 4), head);
+        pt.getChildren().add(headTrans);
+        pt.play();
+        timeline.play();
+        running = true;
+        moved = false;
+    }
+
     public void stopGame() {
         running = false;
-        System.out.println("KUPA");
         timeline.stop();
-        snake.clear();
+        pt.stop();
         pt.getChildren().clear();
-        System.out.println("kupa");
+        score = 0;
+        valueProperty.setValue("score: 0");
+    }
+
+    public void restartGame() {
+        stopGame();
+        startGame();
+    }
+
+    public void pauseGame() {
+        running = false;
+    }
+
+    public void unpauseGame() {
+        running = true;
     }
 
     public static void main(String[] args) {
         launch(args);
     }
+
+
 }
