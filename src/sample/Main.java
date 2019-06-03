@@ -5,6 +5,7 @@ import javafx.application.Application;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
 import javafx.collections.ObservableList;
+import javafx.concurrent.Task;
 import javafx.scene.Group;
 import javafx.scene.Node;
 import javafx.scene.Scene;
@@ -17,6 +18,7 @@ import javafx.stage.Stage;
 import javafx.util.Duration;
 
 import java.util.Random;
+import java.util.concurrent.atomic.AtomicLong;
 
 public class Main extends Application {
 
@@ -40,11 +42,13 @@ public class Main extends Application {
     private Rectangle food;
     StringProperty valueProperty = new SimpleStringProperty("score: 0");
     private static final Group root = new Group();
-
+    private static long lastRate = 0;
+    AtomicLong curRateChange = new AtomicLong(0);
     private Timeline timeline = new Timeline();
     private ParallelTransition pt = new ParallelTransition();
     private ObservableList<Node> snake = root.getChildren();
     private Scene scene = new Scene(pane, WIDTH, HEIGHT, Color.WHITE);
+
 
     @Override
 
@@ -98,15 +102,12 @@ public class Main extends Application {
         startGame();
         head = (Rectangle) snake.get(1);
         scoreBoard.textProperty().bind(valueProperty);
-
-//        BitcoinMarketInfo bitcoinMarketInfo = new Gson().fromJson(bitcoinRates.getJson(), BitcoinMarketInfo.class);
-//        updateValue(bitcoinMarketInfo.getRate_float());
-
+        Thread th = new Thread(task);
+        th.setDaemon(true);
+        th.start();
+        long time = System.currentTimeMillis();
         KeyFrame keyFrame = new KeyFrame(Duration.millis(MS_PER_FRAME), e -> {
-
             if (running) {
-
-                System.out.println("(" + head.getTranslateX() + "," + head.getTranslateY() + ")");
                 double lastToX = head.getTranslateX() / BLOCK_SIZE * BLOCK_SIZE;
                 double lastToY = head.getTranslateY() / BLOCK_SIZE * BLOCK_SIZE;
                 switch (direction) {
@@ -143,10 +144,10 @@ public class Main extends Application {
                 }
 
                 for (Node rect : snake.subList(1, snake.size())) {
-                    if (snake.size() % 2 == 0)
-                        ((Rectangle) rect).setFill(Color.BLACK);
-                    else
+                    if (curRateChange.get() < 0)
                         ((Rectangle) rect).setFill(Color.RED);
+                    else
+                        ((Rectangle) rect).setFill(Color.GREEN);
                     if (head != rect && rect.getTranslateX() == head.getTranslateX() && rect.getTranslateY() == head.getTranslateY()) {
                         restartGame();
                     }
@@ -159,12 +160,14 @@ public class Main extends Application {
                     Rectangle rect = new Rectangle(BLOCK_SIZE, BLOCK_SIZE);
                     rect.setTranslateX(lastToX);
                     rect.setTranslateY(lastToY);
-                    if (snake.size() % 2 == 1)
+                    rect.setArcWidth(1000);
+                    rect.setArcHeight(1000);
+                    if (curRateChange.get() < 0)
                         rect.setFill(Color.RED);
                     else
-                        rect.setFill(Color.BLACK);
+                        rect.setFill(Color.GREEN);
                     root.getChildren().add(rect);
-                    TranslateTransition rectTT = new TranslateTransition(Duration.millis(MS_PER_FRAME * 3 / 4), rect);
+                    TranslateTransition rectTT = new TranslateTransition(Duration.millis(MS_PER_FRAME - 20), rect);
                     pt.getChildren().add(rectTT);
                     food.setTranslateX(random.nextInt(WIDTH - BLOCK_SIZE) / BLOCK_SIZE * BLOCK_SIZE);
                     food.setTranslateY(random.nextInt(HEIGHT - BLOCK_SIZE) / BLOCK_SIZE * BLOCK_SIZE);
@@ -187,7 +190,7 @@ public class Main extends Application {
         food.setTranslateY(random.nextInt(HEIGHT - BLOCK_SIZE) / BLOCK_SIZE * BLOCK_SIZE);
         snake.clear();
         snake.add(food);
-        head = new Rectangle(BLOCK_SIZE, BLOCK_SIZE, Color.BLACK);
+        head = new Rectangle(BLOCK_SIZE, BLOCK_SIZE, Color.RED);
         head.setTranslateX(0);
         head.setTranslateY(0);
         snake.add(head);
@@ -225,5 +228,30 @@ public class Main extends Application {
         launch(args);
     }
 
+    Task<Integer> task = new Task<Integer>() {
+        @Override
+        protected Integer call() throws Exception {
+            int iterations;
+            ForexRates forexRates = new ForexRates();
+            while (true) {
+                if (isCancelled()) {
+                    updateMessage("Cancelled");
+                    break;
+                }
+                curRateChange.set((long) (forexRates.getRatesChange() * 100000000));
+                //Block the thread for a short time, but be sure
+                //to check the InterruptedException for cancellation
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException interrupted) {
+                    if (isCancelled()) {
+                        updateMessage("Cancelled");
+                        break;
+                    }
+                }
+            }
+            return 1;
+        }
+    };
 
 }
