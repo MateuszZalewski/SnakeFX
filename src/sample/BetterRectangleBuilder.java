@@ -26,6 +26,10 @@ public class BetterRectangleBuilder {
         this(arcWidth, arcHeight, 0, 0, width, height, color);
     }
 
+    public BetterRectangleBuilder(double width, double height, Color color) {
+        this(0, 0, width, height, color);
+    }
+
     public void setTranslateX(double translateX) {
         this.translateX = translateX;
     }

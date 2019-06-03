@@ -48,7 +48,9 @@ public class Main extends Application {
     private ParallelTransition pt = new ParallelTransition();
     private ObservableList<Node> snake = root.getChildren();
     private Scene scene = new Scene(pane, WIDTH, HEIGHT, Color.WHITE);
-
+    BetterRectangleBuilder headBuilder = new BetterRectangleBuilder(BLOCK_SIZE, BLOCK_SIZE, Color.RED);
+    BetterRectangleBuilder bodyBuilder = new BetterRectangleBuilder(100, 100, BLOCK_SIZE, BLOCK_SIZE, Color.RED);
+    BetterRectangleBuilder foodBuilder = new BetterRectangleBuilder(BLOCK_SIZE, BLOCK_SIZE, Color.BLUE);
 
     @Override
 
@@ -157,15 +159,12 @@ public class Main extends Application {
 //                pt.stop();
                     score++;
                     valueProperty.setValue("score: " + score);
-                    Rectangle rect = new Rectangle(BLOCK_SIZE, BLOCK_SIZE);
-                    rect.setTranslateX(lastToX);
-                    rect.setTranslateY(lastToY);
-                    rect.setArcWidth(1000);
-                    rect.setArcHeight(1000);
                     if (curRateChange.get() < 0)
-                        rect.setFill(Color.RED);
+                        bodyBuilder.setColor(Color.RED);
                     else
-                        rect.setFill(Color.GREEN);
+                        bodyBuilder.setColor(Color.GREEN);
+                    bodyBuilder.setTranslationXY(lastToX, lastToY);
+                    Rectangle rect = bodyBuilder.build();
                     root.getChildren().add(rect);
                     TranslateTransition rectTT = new TranslateTransition(Duration.millis(MS_PER_FRAME - 20), rect);
                     pt.getChildren().add(rectTT);
@@ -185,14 +184,12 @@ public class Main extends Application {
 
     public void startGame() {
         direction = Direction.RIGHT;
-        food = new Rectangle(BLOCK_SIZE, BLOCK_SIZE, Color.RED);
-        food.setTranslateX(random.nextInt(WIDTH - BLOCK_SIZE) / BLOCK_SIZE * BLOCK_SIZE);
-        food.setTranslateY(random.nextInt(HEIGHT - BLOCK_SIZE) / BLOCK_SIZE * BLOCK_SIZE);
+        foodBuilder.setTranslateX(random.nextInt(WIDTH - BLOCK_SIZE) / BLOCK_SIZE * BLOCK_SIZE);
+        foodBuilder.setTranslateY(random.nextInt(HEIGHT - BLOCK_SIZE) / BLOCK_SIZE * BLOCK_SIZE);
+        food = foodBuilder.build();
         snake.clear();
         snake.add(food);
-        head = new Rectangle(BLOCK_SIZE, BLOCK_SIZE, Color.RED);
-        head.setTranslateX(0);
-        head.setTranslateY(0);
+        head = headBuilder.build();
         snake.add(head);
         TranslateTransition headTrans = new TranslateTransition(Duration.millis(MS_PER_FRAME * 3 / 4), head);
         pt.getChildren().add(headTrans);
@@ -224,6 +221,11 @@ public class Main extends Application {
         running = true;
     }
 
+    private void moveRectangle(Rectangle rect, double x, double y) {
+        rect.setTranslateX(x);
+        rect.setTranslateY(y);
+    }
+
     public static void main(String[] args) {
         launch(args);
     }
@@ -231,7 +233,6 @@ public class Main extends Application {
     Task<Integer> task = new Task<Integer>() {
         @Override
         protected Integer call() throws Exception {
-            int iterations;
             ForexRates forexRates = new ForexRates();
             while (true) {
                 if (isCancelled()) {
@@ -239,10 +240,8 @@ public class Main extends Application {
                     break;
                 }
                 curRateChange.set((long) (forexRates.getRatesChange() * 100000000));
-                //Block the thread for a short time, but be sure
-                //to check the InterruptedException for cancellation
                 try {
-                    Thread.sleep(1000);
+                    Thread.sleep(5000);
                 } catch (InterruptedException interrupted) {
                     if (isCancelled()) {
                         updateMessage("Cancelled");
