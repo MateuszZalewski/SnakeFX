@@ -10,5 +10,6 @@
     <orderEntry type="library" name="javafx-swt" level="application" />
     <orderEntry type="library" name="gson-2.8.5" level="application" />
     <orderEntry type="library" name="jackson-databind-2.9.8" level="application" />
+    <orderEntry type="library" name="log4j-api-2.11.2" level="application" />
   </component>
 </module>
