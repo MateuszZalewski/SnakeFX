@@ -4,9 +4,9 @@ public class ForexJson {
     Rates rates;
 
     private class Rates {
-        ExcahngeRates EURUSD;
+        ExchangeRates EURUSD;
 
-        private class ExcahngeRates {
+        private class ExchangeRates {
             double rate;
             long timestamp;
 

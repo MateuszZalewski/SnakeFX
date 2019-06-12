@@ -25,6 +25,7 @@ import javafx.util.Duration;
 import java.io.*;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.logging.Logger;
 
 public class Main extends Application {
 
@@ -43,11 +44,14 @@ public class Main extends Application {
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         }
+        highscoreProperty = new SimpleStringProperty("score: " + highscore);
     }
 
     public enum Direction {
         UP, DOWN, LEFT, RIGHT
     }
+
+    static Logger logger = Logger.getLogger("Main");
 
     private int score = 0;
     private int highscore = 0;
@@ -63,8 +67,8 @@ public class Main extends Application {
     private final Label scoreBoard = new Label("score:");
     private Rectangle food;
     private StringProperty valueProperty = new SimpleStringProperty("score: 0");
+    private StringProperty highscoreProperty;
     private static final Group root = new Group();
-    private static long lastRate = 0;
     private AtomicLong curRateChange = new AtomicLong(0);
     private Timeline timeline = new Timeline();
     private ParallelTransition pt = new ParallelTransition();
@@ -79,27 +83,35 @@ public class Main extends Application {
     @Override
     public void start(Stage primaryStage) {
 
-        Pane highscoreRoot = new Pane();
+        VBox highscoreRoot = new VBox();
         Label highscoreLabel = new Label("Highest score: " + highscore);
+        highscoreLabel.textProperty().bind(highscoreProperty);
+        Button backButton = new Button("Back");
+        backButton.setOnAction(e -> {
+            primaryStage.setScene(menuScene);
+            primaryStage.show();
+        });
+        highscoreRoot.setAlignment(Pos.CENTER);
         highscoreRoot.getChildren().add(highscoreLabel);
+        highscoreRoot.getChildren().add(backButton);
         highscoreScene = new Scene(highscoreRoot, WIDTH, HEIGHT, Color.WHITE);
 
 
         VBox menuRoot = new VBox();
         menuRoot.setAlignment(Pos.CENTER);
+
         Button play = new Button("PLAY");
-        play.setOnAction(e -> {
-            startGame(primaryStage);
-        });
+        play.setOnAction(e -> startGame(primaryStage));
+
         Button highScore = new Button("HIGH SCORES");
         highScore.setOnAction(e -> {
             primaryStage.setScene(highscoreScene);
             primaryStage.show();
         });
+
         Button exit = new Button("EXIT");
-        exit.setOnAction(e -> {
-            Platform.exit();
-        });
+        exit.setOnAction(e -> Platform.exit());
+
         menuRoot.getChildren().add(play);
         menuRoot.getChildren().add(highScore);
         menuRoot.getChildren().add(exit);
@@ -108,6 +120,7 @@ public class Main extends Application {
         pane.getChildren().add(root);
         pane.getChildren().add(scoreBoard);
         primaryStage.setResizable(false);
+
         gameScene.setOnKeyPressed(keyEvent -> {
                 switch (keyEvent.getCode()) {
                     case UP:
@@ -241,6 +254,7 @@ public class Main extends Application {
         pt.play();
         timeline.play();
         moved = false;
+        logger.info("Game started");
     }
 
     private void stopGame(Stage primaryStage) {
@@ -253,6 +267,7 @@ public class Main extends Application {
         valueProperty.setValue("score: 0");
         primaryStage.setScene(menuScene);
         primaryStage.show();
+        logger.info("Game ended");
     }
 
     private void restartGame(Stage primaryStage) {
@@ -265,13 +280,14 @@ public class Main extends Application {
             return;
         String json = new Gson().toJson(new Highscore(score));
         highscore = score;
+        highscoreProperty.setValue("score: " + highscore);
         try {
-            //write converted json data to a file named "CountryGSON.json"
             FileWriter writer = new FileWriter("highscore.json");
             writer.write(json);
             writer.close();
 
         } catch (IOException e) {
+            logger.warning("Highscore file couldn't be opened.");
             e.printStackTrace();
         }
     }

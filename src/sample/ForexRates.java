@@ -7,8 +7,10 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.logging.Logger;
 
 public class ForexRates {
+    Logger logger = Logger.getLogger("ForexRates");
     private double lastRates;
     private double lastRatesChange;
     private URL url;
@@ -31,13 +33,12 @@ public class ForexRates {
             }
 
         } catch (Exception e) {
-            System.out.println("Exception in NetClientGet:- " + e);
+            logger.warning("Couldn't connect to forex server.");
+//            System.out.println("Exception in NetClientGet:- " + e);
         }
     }
 
     public double getRatesChange() {
-//        if(System.currentTimeMillis() - lastTime < 10000)
-//            return lastRatesChange;
         try {
             url = new URL("https://www.freeforexapi.com/api/live?pairs=EURUSD");
             conn = (HttpURLConnection) url.openConnection();
@@ -49,20 +50,22 @@ public class ForexRates {
             }
 
         } catch (Exception e) {
-            System.out.println("Exception in NetClientGet:- " + e);
+            logger.warning("Couldn't connect to forex server.");
+//            System.out.println("Exception in NetClientGet:- " + e);
         }
         InputStreamReader in = null;
         try {
             in = new InputStreamReader(conn.getInputStream());
         } catch (IOException e) {
-            e.printStackTrace();
+//            e.printStackTrace();
         }
         BufferedReader br = new BufferedReader(in);
         String jsonString = "";
         try {
             jsonString = br.readLine();
         } catch (IOException e) {
-            e.printStackTrace();
+            logger.warning("Buffered reader empty.");
+//            e.printStackTrace();
         }
         ForexJson forexJson = gson.fromJson(jsonString, ForexJson.class);
         if (lastRates != forexJson.getRate()) {
